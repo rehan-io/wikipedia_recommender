@@ -1,29 +1,42 @@
-FROM python:3.10-slim
+FROM python:3.10-alpine
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1 
+ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
+# Install system dependencies with Alpine's package manager
+RUN apk add --no-cache \
+    postgresql-client \
+    postgresql-dev \
+    build-base \
+    jpeg-dev \
+    zlib-dev \
+    libffi-dev 
 
 # Install Python dependencies
-RUN pip install --upgrade pip
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-# Copy project files
-COPY . .
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Create static directories
 RUN mkdir -p /app/static /app/staticfiles
 
-# Fix line endings and make entrypoint executable
-RUN sed -i 's/\r$//' /app/entrypoint.sh && \
+# Copy application code
+COPY . .
+
+# Create an entrypoint script
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
+    echo 'echo "Waiting for database..."' >> /app/entrypoint.sh && \
+    echo 'while ! pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT; do sleep 1; done' >> /app/entrypoint.sh && \
+    echo 'echo "Database is ready"' >> /app/entrypoint.sh && \
+    echo 'python manage.py makemigrations' >> /app/entrypoint.sh && \
+    echo 'python manage.py migrate' >> /app/entrypoint.sh && \
+    echo 'python manage.py collectstatic --no-input' >> /app/entrypoint.sh && \
+    echo 'python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username=\"admin\").exists() or User.objects.create_superuser(\"admin\", \"admin@example.com\", \"adminpassword\")"' >> /app/entrypoint.sh && \
+    echo 'gunicorn config.wsgi:application --bind 0.0.0.0:8000' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
-# Use CMD instead of ENTRYPOINT for easier debugging
-CMD ["/bin/sh", "/app/entrypoint.sh"]
+CMD ["/app/entrypoint.sh"]

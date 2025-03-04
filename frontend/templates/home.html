@@ -1,39 +1,223 @@
 {% extends "base.html" %}
 
-{% block title %}Home | Django PostgreSQL API{% endblock %}
+{% block title %}Wikipedia Recommendations | Django API{% endblock %}
+
+{% block extra_css %}
+<style>
+    .article-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        grid-gap: 1.5rem;
+    }
+    
+    .article-card {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background-color: #fff;
+        break-inside: avoid;
+    }
+    
+    .article-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    .article-image {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+    }
+    
+    .article-placeholder-image {
+        width: 100%;
+        height: 180px;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #6c757d;
+        font-size: 3rem;
+        font-weight: 200;
+    }
+    
+    .article-body {
+        padding: 1rem;
+    }
+    
+    .article-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+        height: 2.8rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    
+    .article-summary {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+        height: 6rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 5;
+        -webkit-box-orient: vertical;
+    }
+    
+    .like-button {
+        border: none;
+        background: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        line-height: 1;
+        padding: 0;
+    }
+    
+    .like-button:hover {
+        transform: scale(1.2);
+    }
+    
+    .like-button.liked {
+        color: #e25563;
+    }
+    
+    .like-button.not-liked {
+        color: #ced4da;
+    }
+    
+    .search-bar {
+        margin-bottom: 2rem;
+    }
+    
+    .tab-content {
+        min-height: 400px;
+    }
+    
+    /* Custom spinner */
+    .spinner {
+        margin: 100px auto;
+        width: 40px;
+        height: 40px;
+        position: relative;
+    }
+    
+    .cube1, .cube2 {
+        background-color: #333;
+        width: 15px;
+        height: 15px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        animation: sk-cubemove 1.8s infinite ease-in-out;
+    }
+    
+    .cube2 {
+        animation-delay: -0.9s;
+    }
+    
+    @keyframes sk-cubemove {
+        25% { transform: translateX(42px) rotate(-90deg) scale(0.5); }
+        50% { transform: translateX(42px) translateY(42px) rotate(-179deg); }
+        50.1% { transform: translateX(42px) translateY(42px) rotate(-180deg); }
+        75% { transform: translateX(0px) translateY(42px) rotate(-270deg) scale(0.5); }
+        100% { transform: rotate(-360deg); }
+    }
+    
+    /* Masonry layout for articles */
+    @media (min-width: 768px) {
+        .article-grid {
+            column-count: 3;
+            column-gap: 1.5rem;
+            display: block;
+        }
+        
+        .article-grid .article-card {
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            width: 100%;
+        }
+    }
+    
+    @media (min-width: 992px) {
+        .article-grid {
+            column-count: 4;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="jumbotron text-center mb-4">
-    <h1 class="display-4">Welcome to Django PostgreSQL API</h1>
-    <p class="lead">A RESTful API built with Django and PostgreSQL, containerized with Docker.</p>
-    <hr class="my-4">
-    <p>Use the links above to navigate through the application.</p>
-</div>
-
-<div class="row">
-    <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header">
-                API Endpoints
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><code>POST /api/signup/</code>: Create a new user account</li>
-                    <li class="list-group-item"><code>POST /api/login/</code>: Login with username and password</li>
-                    <li class="list-group-item"><code>POST /api/logout/</code>: Logout (requires authentication)</li>
-                    <li class="list-group-item"><code>GET/PUT /api/profile/</code>: Get or update user profile</li>
-                </ul>
-            </div>
+<div class="container">
+    <h1 class="mb-4 text-center">Wikipedia Article Recommendations</h1>
+    
+    <!-- Search Bar -->
+    <div class="search-bar">
+        <div class="input-group">
+            <input type="text" id="search-input" class="form-control" placeholder="Search for Wikipedia articles...">
+            <button class="btn btn-primary" id="search-button" type="button">
+                <i class="bi bi-search"></i> Search
+            </button>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                Authentication Status
+    
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="articleTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="recommended-tab" data-bs-toggle="tab" data-bs-target="#recommended" type="button" role="tab" aria-controls="recommended" aria-selected="true">For You</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trending-tab" data-bs-toggle="tab" data-bs-target="#trending" type="button" role="tab" aria-controls="trending" aria-selected="false">Trending</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-results" type="button" role="tab" aria-controls="search-results" aria-selected="false">Search Results</button>
+        </li>
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="tab-content" id="articleTabContent">
+        <!-- Recommended Articles -->
+        <div class="tab-pane fade show active" id="recommended" role="tabpanel" aria-labelledby="recommended-tab">
+            <div id="recommended-loading" class="text-center py-5">
+                <div class="spinner">
+                    <div class="cube1"></div>
+                    <div class="cube2"></div>
+                </div>
+                <p class="mt-4">Finding articles tailored for you...</p>
             </div>
-            <div class="card-body">
-                <div id="auth-status">Checking authentication status...</div>
+            <div id="recommended-articles" class="article-grid"></div>
+        </div>
+        
+        <!-- Trending Articles -->
+        <div class="tab-pane fade" id="trending" role="tabpanel" aria-labelledby="trending-tab">
+            <div id="trending-loading" class="text-center py-5">
+                <div class="spinner">
+                    <div class="cube1"></div>
+                    <div class="cube2"></div>
+                </div>
+                <p class="mt-4">Loading trending articles...</p>
             </div>
+            <div id="trending-articles" class="article-grid"></div>
+        </div>
+        
+        <!-- Search Results -->
+        <div class="tab-pane fade" id="search-results" role="tabpanel" aria-labelledby="search-tab">
+            <div id="search-loading" class="text-center py-5 d-none">
+                <div class="spinner">
+                    <div class="cube1"></div>
+                    <div class="cube2"></div>
+                </div>
+                <p class="mt-4">Searching Wikipedia articles...</p>
+            </div>
+            <div id="search-message" class="text-center py-5">
+                <p>Enter a search term above to find Wikipedia articles.</p>
+            </div>
+            <div id="search-results-grid" class="article-grid"></div>
         </div>
     </div>
 </div>
@@ -41,51 +225,299 @@
 
 {% block extra_js %}
 <script>
+    // Check if user is logged in
     document.addEventListener('DOMContentLoaded', function() {
         const authToken = localStorage.getItem('authToken');
-        const authStatus = document.getElementById('auth-status');
         
-        if (authToken) {
-            // Fetch user profile to verify the token is valid
-            fetch('/api/profile/', {
-                headers: {
-                    'Authorization': `Token ${authToken}`
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Invalid token');
-            })
-            .then(data => {
-                authStatus.innerHTML = `
-                    <div class="alert alert-success">
-                        You are logged in as <strong>${data.username}</strong>
-                    </div>
-                    <a href="{% url 'frontend:profile' %}" class="btn btn-primary">View Profile</a>
-                `;
-            })
-            .catch(error => {
-                localStorage.removeItem('authToken');
-                authStatus.innerHTML = `
-                    <div class="alert alert-warning">
-                        You are not logged in.
-                    </div>
-                    <a href="{% url 'frontend:login' %}" class="btn btn-primary">Login</a>
-                    <a href="{% url 'frontend:signup' %}" class="btn btn-outline-primary">Sign Up</a>
-                `;
-                updateAuthLinks();
-            });
-        } else {
-            authStatus.innerHTML = `
-                <div class="alert alert-warning">
-                    You are not logged in.
-                </div>
-                <a href="{% url 'frontend:login' %}" class="btn btn-primary">Login</a>
-                <a href="{% url 'frontend:signup' %}" class="btn btn-outline-primary">Sign Up</a>
-            `;
+        if (!authToken) {
+            window.location.href = "{% url 'frontend:login' %}";
+            return;
         }
+        
+        // Load recommended articles
+        loadRecommendedArticles();
+        
+        // Set up tabs to load content
+        document.getElementById('trending-tab').addEventListener('click', function() {
+            loadTrendingArticles();
+        });
+        
+        // Set up search
+        document.getElementById('search-button').addEventListener('click', searchArticles);
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchArticles();
+            }
+        });
     });
+    
+    // Load recommended articles
+    function loadRecommendedArticles() {
+        const authToken = localStorage.getItem('authToken');
+        const recommendedGrid = document.getElementById('recommended-articles');
+        const loadingIndicator = document.getElementById('recommended-loading');
+        
+        recommendedGrid.innerHTML = '';
+        loadingIndicator.classList.remove('d-none');
+        
+        fetch('/api/articles/recommended/', {
+            headers: {
+                'Authorization': `Token ${authToken}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load recommendations');
+            return response.json();
+        })
+        .then(data => {
+            loadingIndicator.classList.add('d-none');
+            
+            if (data.length === 0) {
+                recommendedGrid.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <p>No recommendations yet. Try liking some articles!</p>
+                        <button onclick="searchArticles('history')" class="btn btn-primary mt-2">Find Articles to Like</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            data.forEach(article => {
+                const card = createArticleCard(article);
+                recommendedGrid.appendChild(card);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching recommended articles:', error);
+            loadingIndicator.classList.add('d-none');
+            recommendedGrid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <p>Failed to load recommendations. Please try again.</p>
+                    <button onclick="location.reload()" class="btn btn-primary mt-2">Retry</button>
+                </div>
+            `;
+        });
+    }
+    
+    // Load trending articles
+    function loadTrendingArticles() {
+        const authToken = localStorage.getItem('authToken');
+        const trendingGrid = document.getElementById('trending-articles');
+        const loadingIndicator = document.getElementById('trending-loading');
+        
+        // Skip if already loaded
+        if (trendingGrid.children.length > 0) return;
+        
+        trendingGrid.innerHTML = '';
+        loadingIndicator.classList.remove('d-none');
+        
+        fetch('/api/articles/trending/', {
+            headers: {
+                'Authorization': `Token ${authToken}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load trending articles');
+            return response.json();
+        })
+        .then(data => {
+            loadingIndicator.classList.add('d-none');
+            
+            if (data.length === 0) {
+                trendingGrid.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <p>No trending articles available yet. Be the first to like some articles!</p>
+                        <button onclick="searchArticles('popular')" class="btn btn-primary mt-2">Find Popular Articles</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            data.forEach(article => {
+                const card = createArticleCard(article);
+                trendingGrid.appendChild(card);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching trending articles:', error);
+            loadingIndicator.classList.add('d-none');
+            trendingGrid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <p>Failed to load trending articles. Please try again.</p>
+                    <button onclick="loadTrendingArticles()" class="btn btn-primary mt-2">Retry</button>
+                </div>
+            `;
+        });
+    }
+    
+    // Search for articles
+    function searchArticles(defaultQuery) {
+        const authToken = localStorage.getItem('authToken');
+        const searchInput = document.getElementById('search-input');
+        const searchResultsGrid = document.getElementById('search-results-grid');
+        const searchMessage = document.getElementById('search-message');
+        const loadingIndicator = document.getElementById('search-loading');
+        const searchTab = document.getElementById('search-tab');
+        
+        // Use provided query or get from input
+        let query = defaultQuery || searchInput.value.trim();
+        
+        if (!query) return;
+        
+        if (defaultQuery) {
+            // Set the search input value if we're using a default query
+            searchInput.value = defaultQuery;
+        }
+        
+        // Switch to search tab
+        searchTab.click();
+        
+        // Show loading state
+        searchResultsGrid.innerHTML = '';
+        searchMessage.classList.add('d-none');
+        loadingIndicator.classList.remove('d-none');
+        
+        fetch(`/api/articles/search/?q=${encodeURIComponent(query)}`, {
+            headers: {
+                'Authorization': `Token ${authToken}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Search failed');
+            return response.json();
+        })
+        .then(data => {
+            loadingIndicator.classList.add('d-none');
+            
+            if (data.length === 0) {
+                searchMessage.innerHTML = `<p>No results found for "${query}".</p>`;
+                searchMessage.classList.remove('d-none');
+                return;
+            }
+            
+            data.forEach(article => {
+                const card = createArticleCard(article);
+                searchResultsGrid.appendChild(card);
+            });
+        })
+        .catch(error => {
+            console.error('Error searching articles:', error);
+            loadingIndicator.classList.add('d-none');
+            searchMessage.innerHTML = `<p>Failed to search articles. Please try again.</p>`;
+            searchMessage.classList.remove('d-none');
+        });
+    }
+    
+    // Create an article card
+    function createArticleCard(article) {
+        // Create card elements
+        const card = document.createElement('div');
+        card.className = 'article-card';
+        card.dataset.articleId = article.id;
+        
+        // Image container
+        const imageContainer = document.createElement('div');
+        
+        if (article.image_url) {
+            const img = document.createElement('img');
+            img.src = article.image_url;
+            img.alt = article.title;
+            img.className = 'article-image';
+            // Handle image loading errors
+            img.onerror = function() {
+                this.parentNode.replaceWith(createPlaceholder(article.title));
+            };
+            imageContainer.appendChild(img);
+        } else {
+            imageContainer.appendChild(createPlaceholder(article.title));
+        }
+        
+        // Article body
+        const body = document.createElement('div');
+        body.className = 'article-body';
+        
+        // Title
+        const title = document.createElement('h5');
+        title.className = 'article-title';
+        title.textContent = article.title;
+        
+        // Summary 
+        const summary = document.createElement('p');
+        summary.className = 'article-summary';
+        summary.textContent = article.summary;
+        
+        // Action row
+        const actions = document.createElement('div');
+        actions.className = 'd-flex justify-content-between align-items-center';
+        
+        // Read more link
+        const link = document.createElement('a');
+        link.href = article.url;
+        link.className = 'btn btn-sm btn-outline-primary';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Read More';
+        
+        // Like button
+        const likeBtn = document.createElement('button');
+        likeBtn.className = article.is_liked ? 'like-button liked' : 'like-button not-liked';
+        likeBtn.innerHTML = '❤';
+        likeBtn.setAttribute('aria-label', article.is_liked ? 'Unlike this article' : 'Like this article');
+        likeBtn.addEventListener('click', function() {
+            toggleLike(article.id, likeBtn);
+        });
+        
+        // Assemble card
+        actions.appendChild(link);
+        actions.appendChild(likeBtn);
+        
+        body.appendChild(title);
+        body.appendChild(summary);
+        body.appendChild(actions);
+        
+        card.appendChild(imageContainer);
+        card.appendChild(body);
+        
+        return card;
+    }
+    
+    // Create placeholder for missing images
+    function createPlaceholder(title) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'article-placeholder-image';
+        placeholder.textContent = title.charAt(0).toUpperCase();
+        return placeholder;
+    }
+    
+    // Toggle like status
+    function toggleLike(articleId, button) {
+        const authToken = localStorage.getItem('authToken');
+        
+        fetch(`/api/articles/${articleId}/like/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Token ${authToken}`,
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to update like status');
+            return response.json();
+        })
+        .then(data => {
+            if (data.liked) {
+                button.className = 'like-button liked';
+                button.setAttribute('aria-label', 'Unlike this article');
+            } else {
+                button.className = 'like-button not-liked';
+                button.setAttribute('aria-label', 'Like this article');
+            }
+        })
+        .catch(error => {
+            console.error('Error toggling like:', error);
+            alert('Could not update like status. Please try again.');
+        });
+    }
 </script>
 {% endblock %}
