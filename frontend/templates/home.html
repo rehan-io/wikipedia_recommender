@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Django PostgreSQL API{% endblock %}
+
+{% block content %}
+<div class="jumbotron text-center mb-4">
+    <h1 class="display-4">Welcome to Django PostgreSQL API</h1>
+    <p class="lead">A RESTful API built with Django and PostgreSQL, containerized with Docker.</p>
+    <hr class="my-4">
+    <p>Use the links above to navigate through the application.</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                API Endpoints
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><code>POST /api/signup/</code>: Create a new user account</li>
+                    <li class="list-group-item"><code>POST /api/login/</code>: Login with username and password</li>
+                    <li class="list-group-item"><code>POST /api/logout/</code>: Logout (requires authentication)</li>
+                    <li class="list-group-item"><code>GET/PUT /api/profile/</code>: Get or update user profile</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Authentication Status
+            </div>
+            <div class="card-body">
+                <div id="auth-status">Checking authentication status...</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const authToken = localStorage.getItem('authToken');
+        const authStatus = document.getElementById('auth-status');
+        
+        if (authToken) {
+            // Fetch user profile to verify the token is valid
+            fetch('/api/profile/', {
+                headers: {
+                    'Authorization': `Token ${authToken}`
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Invalid token');
+            })
+            .then(data => {
+                authStatus.innerHTML = `
+                    <div class="alert alert-success">
+                        You are logged in as <strong>${data.username}</strong>
+                    </div>
+                    <a href="{% url 'frontend:profile' %}" class="btn btn-primary">View Profile</a>
+                `;
+            })
+            .catch(error => {
+                localStorage.removeItem('authToken');
+                authStatus.innerHTML = `
+                    <div class="alert alert-warning">
+                        You are not logged in.
+                    </div>
+                    <a href="{% url 'frontend:login' %}" class="btn btn-primary">Login</a>
+                    <a href="{% url 'frontend:signup' %}" class="btn btn-outline-primary">Sign Up</a>
+                `;
+                updateAuthLinks();
+            });
+        } else {
+            authStatus.innerHTML = `
+                <div class="alert alert-warning">
+                    You are not logged in.
+                </div>
+                <a href="{% url 'frontend:login' %}" class="btn btn-primary">Login</a>
+                <a href="{% url 'frontend:signup' %}" class="btn btn-outline-primary">Sign Up</a>
+            `;
+        }
+    });
+</script>
+{% endblock %}

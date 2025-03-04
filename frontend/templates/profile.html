@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Profile | Django PostgreSQL API{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 class="mb-4">Profile</h2>
+    <div id="error-message" class="alert alert-danger d-none"></div>
+    <div id="success-message" class="alert alert-success d-none"></div>
+    
+    <div id="loading" class="text-center">
+        <p>Loading profile data...</p>
+    </div>
+    
+    <form id="profile-form" class="d-none">
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" readonly>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email">
+        </div>
+        <div class="mb-3">
+            <label for="first_name" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="first_name" name="first_name">
+        </div>
+        <div class="mb-3">
+            <label for="last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="last_name" name="last_name">
+        </div>
+        <div class="mb-3">
+            <label for="bio" class="form-label">Bio</label>
+            <textarea class="form-control" id="bio" name="bio" rows="3"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="birth_date" class="form-label">Birth Date</label>
+            <input type="date" class="form-control" id="birth_date" name="birth_date">
+        </div>
+        <button type="submit" class="btn btn-primary">Update Profile</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const authToken = localStorage.getItem('authToken');
+        const loadingDiv = document.getElementById('loading');
+        const profileForm = document.getElementById('profile-form');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        
+        if (!authToken) {
+            window.location.href = "{% url 'frontend:login' %}";
+            return;
+        }
+        
+        // Fetch user profile data
+        fetch('/api/profile/', {
+            headers: {
+                'Authorization': `Token ${authToken}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Unauthorized');
+            }
+            return response.json();
+        })
+        .then(user => {
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('first_name').value = user.first_name || '';
+            document.getElementById('last_name').value = user.last_name || '';
+            document.getElementById('bio').value = user.bio || '';
+            
+            if (user.birth_date) {
+                document.getElementById('birth_date').value = user.birth_date;
+            }
+            
+            loadingDiv.classList.add('d-none');
+            profileForm.classList.remove('d-none');
+        })
+        .catch(error => {
+            localStorage.removeItem('authToken');
+            window.location.href = "{% url 'frontend:login' %}";
+        });
+        
+        // Handle form submission
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userData = {
+                email: document.getElementById('email').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                bio: document.getElementById('bio').value,
+                birth_date: document.getElementById('birth_date').value || null
+            };
+            
+            errorMessage.classList.add('d-none');
+            successMessage.classList.add('d-none');
+            
+            fetch('/api/profile/', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${authToken}`,
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    successMessage.textContent = 'Profile updated successfully.';
+                    successMessage.classList.remove('d-none');
+                } else {
+                    errorMessage.textContent = Object.values(data).flat().join(' ');
+                    errorMessage.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                errorMessage.classList.remove('d-none');
+            });
+        });
+    });
+</script>
+{% endblock %}
