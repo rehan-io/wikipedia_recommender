@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: >
+      /bin/sh -c "
+      echo 'Waiting for database...' &&
+      while ! nc -z $${POSTGRES_HOST} $${POSTGRES_PORT}; do sleep 0.1; done &&
+      echo 'Database is ready' &&
+      python manage.py makemigrations &&
+      python manage.py migrate &&
+      python manage.py collectstatic --no-input &&
+      python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='$${DJANGO_SUPERUSER_USERNAME}').exists() or User.objects.create_superuser('$${DJANGO_SUPERUSER_USERNAME}', '$${DJANGO_SUPERUSER_EMAIL}', '$${DJANGO_SUPERUSER_PASSWORD}')\" &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:8000
+      "
+    volumes:
+      - ./:/app/
+      - static_volume:/app/staticfiles
+    environment:
+      - DEBUG=True
+      - DJANGO_SECRET_KEY=dont-use-this-key-in-production
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
+      - DJANGO_SUPERUSER_PASSWORD=adminpassword
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+volumes:
+  postgres_data:
+  static_volume:
