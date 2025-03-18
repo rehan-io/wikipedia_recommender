@@ -18,8 +18,7 @@ RUN apk add --no-cache \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create static directories
-RUN mkdir -p /app/static /app/staticfiles
+
 
 # Copy application code
 COPY . .
