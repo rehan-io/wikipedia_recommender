@@ -15,9 +15,7 @@ python manage.py makemigrations
 echo "Applying migrations..."
 python manage.py migrate
 
-# Collect static files
-echo "Collecting static files..."
-python manage.py collectstatic --no-input
+
 
 # Create a superuser if not exists
 echo "Creating superuser..."

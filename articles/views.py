@@ -5,6 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from .models import WikipediaArticle, UserArticleInteraction
 from .serializers import WikipediaArticleSerializer, UserArticleInteractionSerializer
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
+import requests
 
 # Import the lite version of services
 try:
@@ -110,3 +114,30 @@ class TrendingArticlesAPIView(APIView):
             trending_articles, many=True, context={'request': request}
         )
         return Response(serializer.data)
+
+
+@require_http_methods(["GET"])
+def fetch_articles(request):
+    """API endpoint to fetch more Wikipedia articles for infinite scrolling"""
+    count = int(request.GET.get('count', 5))
+    
+    # Directly implement random article fetching here instead of using WikipediaService
+    base_url = "https://en.wikipedia.org/api/rest_v1/page/random/summary"
+    articles = []
+    
+    for _ in range(count):
+        try:
+            response = requests.get(base_url)
+            data = response.json()
+            
+            article = {
+                'title': data.get('title'),
+                'extract': data.get('extract'),
+                'thumbnail': data.get('thumbnail', {}).get('source') if data.get('thumbnail') else None,
+                'url': data.get('content_urls', {}).get('desktop', {}).get('page') if data.get('content_urls') else None
+            }
+            articles.append(article)
+        except Exception as e:
+            print(f"Error fetching Wikipedia article: {e}")
+    
+    return JsonResponse({'articles': articles})

@@ -25,7 +25,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     # Local apps
     'users',
-    'frontend',  # Add the frontend app here
+    'frontend',
+    'articles'
 ]
 
 MIDDLEWARE = [
