@@ -260,7 +260,7 @@
         recommendedGrid.innerHTML = '';
         loadingIndicator.classList.remove('d-none');
         
-        fetch('/api/articles', {
+        fetch('/api/articles/recommended', {
             headers: {
                 'Authorization': `Token ${authToken}`
             }
@@ -327,17 +327,20 @@
         .then(data => {
             loadingIndicator.classList.add('d-none');
             
-            if (data.length === 0) {
+            const articles = data.articles || data;
+            
+            if (!articles || articles.length === 0) {
                 trendingGrid.innerHTML = `
                     <div class="col-12 text-center py-5">
-                        <p>No trending articles available yet. Be the first to like some articles!</p>
-                        <button onclick="searchArticles('popular')" class="btn btn-primary mt-2">Find Popular Articles</button>
+                        <p>No recommendations yet. Try liking some articles!</p>
+                        <button onclick="searchArticles('history')" class="btn btn-primary mt-2">Find Articles to Like</button>
                     </div>
                 `;
                 return;
             }
             
-            data.forEach(article => {
+            // Use the articles array (handles both response formats)
+            articles.forEach(article => {
                 const card = createArticleCard(article);
                 trendingGrid.appendChild(card);
             });
@@ -393,13 +396,20 @@
         .then(data => {
             loadingIndicator.classList.add('d-none');
             
-            if (data.length === 0) {
-                searchMessage.innerHTML = `<p>No results found for "${query}".</p>`;
-                searchMessage.classList.remove('d-none');
+            const articles = data.articles || data;
+            
+            if (!articles || articles.length === 0) {
+                searchResultsGrid.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <p>No recommendations yet. Try liking some articles!</p>
+                        <button onclick="searchArticles('history')" class="btn btn-primary mt-2">Find Articles to Like</button>
+                    </div>
+                `;
                 return;
             }
             
-            data.forEach(article => {
+            // Use the articles array (handles both response formats)
+            articles.forEach(article => {
                 const card = createArticleCard(article);
                 searchResultsGrid.appendChild(card);
             });
