@@ -18,10 +18,14 @@ RUN apk add --no-cache \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-
-
 # Copy application code
 COPY . .
+
+# Add these lines to your Dockerfile if they don't exist
+COPY . /app/
+WORKDIR /app
+RUN mkdir -p /app/frontend/build
+RUN echo "<!DOCTYPE html><html><body><h1>Placeholder</h1></body></html>" > /app/frontend/build/index.html
 
 # Create an entrypoint script
 RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
@@ -34,6 +38,9 @@ RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
     echo 'python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username=\"admin\").exists() or User.objects.create_superuser(\"admin\", \"admin@example.com\", \"adminpassword\")"' >> /app/entrypoint.sh && \
     echo 'gunicorn config.wsgi:application --bind 0.0.0.0:8000' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
+
+# Add this line to your existing Dockerfile
+RUN if [ -f /app/start.sh ]; then chmod +x /app/start.sh; fi
 
 EXPOSE 8000
 

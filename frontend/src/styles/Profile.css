@@ -1,0 +1,102 @@
+.profile-header {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header h1 {
+  margin-bottom: 1.5rem;
+  color: #343a40;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-info h2 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.user-info p {
+  color: #6c757d;
+  margin: 0;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #0d6efd;
+}
+
+.stat-card p {
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+.recent-activity {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.recent-activity h3 {
+  margin-bottom: 1.5rem;
+  color: #343a40;
+}
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-type {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+}
+
+.activity-details {
+  flex: 1;
+}
+
+.activity-details h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.text-muted {
+  color: #6c757d;
+}

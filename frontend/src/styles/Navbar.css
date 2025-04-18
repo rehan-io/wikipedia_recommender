@@ -1,0 +1,32 @@
+.navbar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.nav-link {
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #0d6efd !important;
+}
+
+.nav-link.active {
+  color: #0d6efd !important;
+  font-weight: 600;
+}
+
+.dropdown-menu {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.dropdown-item:active {
+  background-color: #0d6efd;
+}

@@ -1,17 +1,23 @@
-from django.shortcuts import render
-from django.views.generic import TemplateView
+from django.shortcuts import redirect
+from django.views.generic import View
+from django.http import JsonResponse
+import os
+import logging
 
-class HomeView(TemplateView):
-    template_name = 'home.html'  
+logger = logging.getLogger(__name__)
 
-class SignupView(TemplateView):
-    template_name = 'signup.html'  
+class ReactAppView(View):
+    """
+    During development, this redirects to the React dev server.
+    In production, it would serve the built React app.
+    """
+    def get(self, request, *args, **kwargs):
+        # In development, redirect to the React dev server
+        return redirect('http://localhost:3000')
 
-class LoginView(TemplateView):
-    template_name = 'login.html'  
-
-class LogoutView(TemplateView):
-    template_name = 'logout.html'  
-
-class ProfileView(TemplateView):
-    template_name = 'profile.html'  
+# Use ReactAppView for all frontend routes
+HomeView = ReactAppView
+SignupView = ReactAppView
+LoginView = ReactAppView
+LogoutView = ReactAppView
+ProfileView = ReactAppView
