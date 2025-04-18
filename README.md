@@ -2,7 +2,7 @@
 
 A modern web application that helps users discover, search, and interact with Wikipedia articles. The system provides personalized article recommendations based on user preferences, trending articles, and search functionality.
 
-![Wikipedia Explorer](https://via.placeholder.com/800x400?text=Wikipedia+Explorer)
+Wikipedia Explorer
 
 ## Features
 
